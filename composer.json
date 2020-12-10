@@ -1,11 +1,11 @@
 {
-    "name": "broadway/event-store-dbal",
+    "name": "micro-module/event-store-dbal",
     "description": "Event store implementation using doctrine/dbal",
     "license": "MIT",
     "require": {
-        "php": ">=7.2",
-        "broadway/broadway": "^2.3.1",
-        "doctrine/dbal": "^2.4"
+        "php": "^7.4 || ^8.0",
+        "micro-module/broadway": "^2.3.1",
+        "doctrine/dbal": "^2.4 || ^3.0"
     },
     "authors": [
       {
