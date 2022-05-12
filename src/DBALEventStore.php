@@ -28,7 +28,7 @@ use Broadway\Serializer\Serializer;
 use Broadway\UuidGenerator\Converter\BinaryUuidConverterInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DBALException;
-use Doctrine\DBAL\Driver\Statement;
+use Doctrine\DBAL\Statement;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Version;
@@ -44,37 +44,37 @@ class DBALEventStore implements EventStore, EventStoreManagement
     /**
      * @var Connection
      */
-    private $connection;
+    protected Connection $connection;
 
     /**
      * @var Serializer
      */
-    private $payloadSerializer;
+    protected Serializer $payloadSerializer;
 
     /**
      * @var Serializer
      */
-    private $metadataSerializer;
+    protected Serializer $metadataSerializer;
 
     /**
      * @var Statement|null
      */
-    private $loadStatement = null;
+    protected ?Statement $loadStatement = null;
 
     /**
      * @var string
      */
-    private $tableName;
+    protected string $tableName;
 
     /**
      * @var bool
      */
-    private $useBinary;
+    protected bool $useBinary;
 
     /**
      * @var BinaryUuidConverterInterface|null
      */
-    private $binaryUuidConverter;
+    protected $binaryUuidConverter;
 
     public function __construct(
         Connection $connection,
@@ -108,10 +108,10 @@ class DBALEventStore implements EventStore, EventStoreManagement
         $statement = $this->prepareLoadStatement();
         $statement->bindValue(1, $this->convertIdentifierToStorageValue($id));
         $statement->bindValue(2, 0);
-        $statement->execute();
-
+        $result = $statement->execute();
         $events = [];
-        while ($row = $statement->fetch()) {
+
+        while ($row = $result->fetchAssociative()) {
             $events[] = $this->deserializeEvent($row);
         }
 
@@ -131,8 +131,8 @@ class DBALEventStore implements EventStore, EventStoreManagement
         $statement->bindValue(1, $this->convertIdentifierToStorageValue($id));
         $statement->bindValue(2, $playhead);
         $statement->execute();
-
         $events = [];
+
         while ($row = $statement->fetch()) {
             $events[] = $this->deserializeEvent($row);
         }
@@ -151,7 +151,6 @@ class DBALEventStore implements EventStore, EventStoreManagement
         // give us a hard time but the true reason for the problem
         // will be obfuscated.
         $id = (string) $id;
-
         $this->connection->beginTransaction();
 
         try {
@@ -159,7 +158,6 @@ class DBALEventStore implements EventStore, EventStoreManagement
             foreach ($eventStream as $domainMessage) {
                 $this->insertMessage($this->connection, $domainMessage);
             }
-
             $this->connection->commit();
         } catch (UniqueConstraintViolationException $exception) {
             $this->connection->rollBack();
@@ -172,7 +170,7 @@ class DBALEventStore implements EventStore, EventStoreManagement
         }
     }
 
-    private function insertMessage(Connection $connection, DomainMessage $domainMessage): void
+    protected function insertMessage(Connection $connection, DomainMessage $domainMessage): void
     {
         $data = [
             'uuid' => $this->convertIdentifierToStorageValue((string) $domainMessage->getId()),
@@ -182,7 +180,6 @@ class DBALEventStore implements EventStore, EventStoreManagement
             'recorded_on' => $domainMessage->getRecordedOn()->toString(),
             'type' => $domainMessage->getType(),
         ];
-
         $connection->insert($this->tableName, $data);
     }
 
@@ -198,7 +195,6 @@ class DBALEventStore implements EventStore, EventStoreManagement
     public function configureTable(Schema $schema = null): \Doctrine\DBAL\Schema\Table
     {
         $schema = $schema ?: new Schema();
-
         $uuidColumnDefinition = [
             'type' => 'guid',
             'params' => [
@@ -213,9 +209,7 @@ class DBALEventStore implements EventStore, EventStoreManagement
                 'fixed' => true,
             ];
         }
-
         $table = $schema->createTable($this->tableName);
-
         $table->addColumn('id', 'integer', ['autoincrement' => true]);
         $table->addColumn('uuid', $uuidColumnDefinition['type'], $uuidColumnDefinition['params']);
         $table->addColumn('playhead', 'integer', ['unsigned' => true]);
@@ -223,14 +217,13 @@ class DBALEventStore implements EventStore, EventStoreManagement
         $table->addColumn('metadata', 'text');
         $table->addColumn('recorded_on', 'string', ['length' => 32]);
         $table->addColumn('type', 'string', ['length' => 255]);
-
         $table->setPrimaryKey(['id']);
         $table->addUniqueIndex(['uuid', 'playhead']);
 
         return $table;
     }
 
-    private function prepareLoadStatement(): Statement
+    protected function prepareLoadStatement(): Statement
     {
         if (null === $this->loadStatement) {
             $query = 'SELECT uuid, playhead, metadata, payload, recorded_on
@@ -244,7 +237,7 @@ class DBALEventStore implements EventStore, EventStoreManagement
         return $this->loadStatement;
     }
 
-    private function deserializeEvent(array $row): DomainMessage
+    protected function deserializeEvent(array $row): DomainMessage
     {
         return new DomainMessage(
             $this->convertStorageValueToIdentifier($row['uuid']),
@@ -260,7 +253,7 @@ class DBALEventStore implements EventStore, EventStoreManagement
      *
      * @return mixed
      */
-    private function convertIdentifierToStorageValue($id)
+    protected function convertIdentifierToStorageValue($id)
     {
         if ($this->useBinary) {
             try {
@@ -278,7 +271,7 @@ class DBALEventStore implements EventStore, EventStoreManagement
      *
      * @return mixed
      */
-    private function convertStorageValueToIdentifier($id)
+    protected function convertStorageValueToIdentifier(mixed $id): mixed
     {
         if ($this->useBinary) {
             try {
@@ -298,33 +291,29 @@ class DBALEventStore implements EventStore, EventStoreManagement
 
         while ($row = $statement->fetch()) {
             $domainMessage = $this->deserializeEvent($row);
-
             $eventVisitor->doWithEvent($domainMessage);
         }
     }
 
-    private function prepareVisitEventsStatement(Criteria $criteria): Statement
+    protected function prepareVisitEventsStatement(Criteria $criteria): Statement
     {
         list($where, $bindValues, $bindValueTypes) = $this->prepareVisitEventsStatementWhereAndBindValues($criteria);
         $query = 'SELECT uuid, playhead, metadata, payload, recorded_on
             FROM '.$this->tableName.'
             '.$where.'
             ORDER BY id ASC';
-
         $statement = $this->connection->executeQuery($query, $bindValues, $bindValueTypes);
 
         return $statement;
     }
 
-    private function prepareVisitEventsStatementWhereAndBindValues(Criteria $criteria): array
+    protected function prepareVisitEventsStatementWhereAndBindValues(Criteria $criteria): array
     {
         if ($criteria->getAggregateRootTypes()) {
             throw new CriteriaNotSupportedException('DBAL implementation cannot support criteria based on aggregate root types.');
         }
-
         $bindValues = [];
         $bindValueTypes = [];
-
         $criteriaTypes = [];
 
         if ($criteria->getAggregateRootIds()) {
@@ -351,7 +340,6 @@ class DBALEventStore implements EventStore, EventStoreManagement
         if (!$criteriaTypes) {
             return ['', [], []];
         }
-
         $where = 'WHERE '.join(' AND ', $criteriaTypes);
 
         return [$where, $bindValues, $bindValueTypes];
