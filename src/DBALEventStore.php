@@ -130,10 +130,10 @@ class DBALEventStore implements EventStore, EventStoreManagement
         $statement = $this->prepareLoadStatement();
         $statement->bindValue(1, $this->convertIdentifierToStorageValue($id));
         $statement->bindValue(2, $playhead);
-        $statement->execute();
+        $result = $statement->execute();
         $events = [];
 
-        while ($row = $statement->fetch()) {
+        while ($row = $result->fetchAssociative()) {
             $events[] = $this->deserializeEvent($row);
         }
 
@@ -287,9 +287,10 @@ class DBALEventStore implements EventStore, EventStoreManagement
     public function visitEvents(Criteria $criteria, EventVisitor $eventVisitor): void
     {
         $statement = $this->prepareVisitEventsStatement($criteria);
-        $statement->execute();
+        $result = $statement->execute();
+        $events = [];
 
-        while ($row = $statement->fetch()) {
+        while ($row = $result->fetchAssociative()) {
             $domainMessage = $this->deserializeEvent($row);
             $eventVisitor->doWithEvent($domainMessage);
         }
