@@ -1,17 +1,32 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Cannot call static method fromString\\(\\) on Broadway\\\\UuidGenerator\\\\Converter\\\\BinaryUuidConverterInterface\\|null\\.$#"
-			count: 1
-			path: src/DBALEventStore.php
-
-		-
 			message: "#^Cannot call static method fromBytes\\(\\) on Broadway\\\\UuidGenerator\\\\Converter\\\\BinaryUuidConverterInterface\\|null\\.$#"
 			count: 1
 			path: src/DBALEventStore.php
 
 		-
-			message: "#^Method Broadway\\\\EventStore\\\\Dbal\\\\DBALEventStore\\:\\:prepareVisitEventsStatement\\(\\) should return Doctrine\\\\DBAL\\\\Driver\\\\Statement but returns Doctrine\\\\DBAL\\\\Driver\\\\ResultStatement\\.$#"
+			message: "#^Cannot call static method fromString\\(\\) on Broadway\\\\UuidGenerator\\\\Converter\\\\BinaryUuidConverterInterface\\|null\\.$#"
+			count: 1
+			path: src/DBALEventStore.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 3
+			path: src/DBALEventStore.php
+
+		-
+			message: "#^Parameter \\#1 \\$serializedObject of method Broadway\\\\Serializer\\\\Serializer\\:\\:deserialize\\(\\) expects array, mixed given\\.$#"
+			count: 2
+			path: src/DBALEventStore.php
+
+		-
+			message: "#^Parameter \\#2 \\.\\.\\.\\$values of function sprintf expects bool\\|float\\|int\\|string\\|null, mixed given\\.$#"
+			count: 1
+			path: src/DBALEventStore.php
+
+		-
+			message: "#^Parameter \\#3 \\$metadata of class Broadway\\\\Domain\\\\DomainMessage constructor expects Broadway\\\\Domain\\\\Metadata, mixed given\\.$#"
 			count: 1
 			path: src/DBALEventStore.php
 

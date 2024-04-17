@@ -20,22 +20,21 @@ use Broadway\UuidGenerator\Rfc4122\Version4Generator;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Type;
-use Doctrine\DBAL\Version;
+use Doctrine\DBAL\Types\Types;
+use Prophecy\PhpUnit\ProphecyTrait;
 
 /**
  * @requires extension pdo_sqlite
  */
 class BinaryDBALEventStoreTest extends DBALEventStoreTest
 {
+    use ProphecyTrait;
+
     /** @var \Doctrine\DBAL\Schema\Table */
     protected $table;
 
     protected function setUp(): void
     {
-        if (Version::compare('2.5.0') >= 0) {
-            $this->markTestSkipped('Binary type is only available for Doctrine >= v2.5');
-        }
-
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $schemaManager = $connection->getSchemaManager();
         $schema = $schemaManager->createSchema();
@@ -61,7 +60,7 @@ class BinaryDBALEventStoreTest extends DBALEventStoreTest
         $uuidColumn = $this->table->getColumn('uuid');
 
         $this->assertEquals(16, $uuidColumn->getLength());
-        $this->assertEquals(Type::getType(Type::BINARY), $uuidColumn->getType());
+        $this->assertEquals(Type::getType(Types::BINARY), $uuidColumn->getType());
         $this->assertTrue($uuidColumn->getFixed());
     }
 
@@ -104,5 +103,25 @@ class BinaryDBALEventStoreTest extends DBALEventStoreTest
             true,
             null
         );
+    }
+
+    /**
+     * Overriding base test as it doesn't use the data provider andthis testcase fails on non-uuid ids.
+     *
+     * @test
+     */
+    public function empty_set_of_events_can_be_added(): void
+    {
+        $id = (new Version4Generator())->generate();
+
+        $domainMessage = $this->createDomainMessage($id, 0);
+        $baseStream = new DomainEventStream([$domainMessage]);
+        $this->eventStore->append($id, $baseStream);
+        $appendedEventStream = new DomainEventStream([]);
+
+        $this->eventStore->append($id, $appendedEventStream);
+
+        $events = $this->eventStore->load($id);
+        $this->assertCount(1, $events);
     }
 }

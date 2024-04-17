@@ -18,12 +18,15 @@ use Broadway\Serializer\SimpleInterfaceSerializer;
 use Broadway\UuidGenerator\Converter\BinaryUuidConverter;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use Prophecy\PhpUnit\ProphecyTrait;
 
 /**
  * @requires extension pdo_sqlite
  */
 class DBALEventStoreTest extends EventStoreTest
 {
+    use ProphecyTrait;
+
     protected function setUp(): void
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
@@ -44,6 +47,7 @@ class DBALEventStoreTest extends EventStoreTest
 
     /**
      * @test
+     *
      * @doesNotPerformAssertions
      */
     public function it_allows_no_binary_uuid_converter_provided_when_not_using_binary()

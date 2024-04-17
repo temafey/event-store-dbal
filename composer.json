@@ -3,9 +3,9 @@
     "description": "Event store implementation using doctrine/dbal",
     "license": "MIT",
     "require": {
-        "php": "^7.4 || ^8.0",
-        "micro-module/broadway": "^2.4",
-        "doctrine/dbal": "^2.4 || ^3.0"
+        "php": "^8.1",
+        "micro-module/broadway": "^2.6",
+        "doctrine/dbal": "^3.8"
     },
     "authors": [
       {
@@ -35,10 +35,12 @@
     ],
     "require-dev": {
         "ext-pdo_sqlite": "*",
-        "phpunit/phpunit": "^8.0",
+        "phpunit/phpunit": "^10.5",
         "ramsey/uuid": "^4.0",
-        "broadway/coding-standard": "^1.0",
-        "phpstan/phpstan": "@stable"
+        "broadway/coding-standard": "^1.2",
+        "phpstan/phpstan": "@stable",
+        "phpspec/prophecy": "^1.15",
+        "phpspec/prophecy-phpunit": "^2.2"
     },
     "autoload": {
         "psr-4": {
