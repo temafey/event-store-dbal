@@ -16,6 +16,7 @@ namespace Broadway\EventStore\Dbal;
 use Broadway\Domain\DateTime;
 use Broadway\Domain\DomainEventStream;
 use Broadway\Domain\DomainMessage;
+use Broadway\EventSourcing\ShouldNotStoredEvent;
 use Broadway\EventStore\EventStore;
 use Broadway\EventStore\EventStreamNotFoundException;
 use Broadway\EventStore\EventVisitor;
@@ -144,6 +145,9 @@ class DBALEventStore implements EventStore, EventStoreManagement
         try {
             /** @var DomainMessage $domainMessage */
             foreach ($eventStream as $domainMessage) {
+                if ($domainMessage->getPayload() instanceof ShouldNotStoredEvent) {
+                    continue;
+                }
                 $this->insertMessage($this->connection, $domainMessage);
             }
 
